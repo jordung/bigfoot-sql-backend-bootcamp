@@ -7,7 +7,8 @@ class SightingsRouter {
   }
   routes() {
     // we will insert routes into here later on
-    router.get("/", this.controller.getAll.bind(this.controller));
+    router.get("/", this.controller.listAll);
+    router.get("/category", this.controller.getCategory);
     router.get("/:sightingId", this.controller.getOne.bind(this.controller));
     router.post("/", this.controller.add);
     router.delete("/:id", this.controller.delete);

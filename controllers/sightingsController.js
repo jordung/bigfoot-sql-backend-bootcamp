@@ -1,16 +1,32 @@
 const BaseController = require("./baseController");
 
 class SightingsController extends BaseController {
-  constructor(model, commentModel) {
+  constructor(model, commentModel, categoryModel, sightingCategoryModel) {
     super(model);
     this.commentModel = commentModel;
+    this.categoryModel = categoryModel;
+    this.sightingCategoryModel = sightingCategoryModel;
   }
+
+  listAll = async (req, res) => {
+    try {
+      console.log(this.sightingCategoryModel);
+      const sightings = await this.model.findAll({
+        include: this.categoryModel,
+      });
+      return res.json({ sightings: sightings, message: "Success" });
+    } catch (err) {
+      return res.status(400).json({ error: true, msg: err });
+    }
+  };
 
   // Retrieve specific sighting
   async getOne(req, res) {
     const { sightingId } = req.params;
     try {
-      const sighting = await this.model.findByPk(sightingId);
+      const sighting = await this.model.findByPk(sightingId, {
+        include: this.categoryModel,
+      });
       return res.json(sighting);
     } catch (err) {
       return res.status(400).json({ error: true, msg: err });
@@ -18,16 +34,27 @@ class SightingsController extends BaseController {
   }
 
   add = async (req, res) => {
-    const sighting = req.body;
-    const sightingDetails = await this.model.create({
-      ...sighting,
+    const { date, location, notes, category } = req.body;
+    console.log(category);
+    const newSighting = await this.model.create({
+      date: new Date(date),
+      location: location,
+      notes: notes,
     });
 
+    await newSighting.setCategories(category);
+
     // send back single sighting
-    res.json({ sighting: sightingDetails, message: "Success" });
+    res.json({ sighting: newSighting, message: "Success" });
   };
 
   delete = async (req, res) => {
+    await this.sightingCategoryModel.destroy({
+      where: {
+        sightingId: req.params.id,
+      },
+    });
+
     await this.model.destroy({
       where: {
         id: req.params.id,
@@ -71,6 +98,15 @@ class SightingsController extends BaseController {
       sighting_id: sightingId,
     });
     res.json(newComment);
+  };
+
+  getCategory = async (req, res) => {
+    try {
+      const category = await this.categoryModel.findAll();
+      return res.json({ data: category, message: "Success" });
+    } catch (err) {
+      return res.status(400).json({ error: true, msg: err });
+    }
   };
 }
 
